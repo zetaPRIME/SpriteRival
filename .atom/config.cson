@@ -1,0 +1,11 @@
+"*":
+	core:
+		dummy: false
+".lua.source":
+	editor:
+		tabLength: 2
+		tabType: "hard"
+".coffee.source":
+	editor:
+		tabLength: 2
+		tabType: "hard"

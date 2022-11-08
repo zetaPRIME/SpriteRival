@@ -1,0 +1,17 @@
+{
+  "name": "spriterival",
+  "displayName": "SpriteRival",
+  "description": "Tools for Rivals of Aether spritework",
+  "version": "0.1",
+  "author": { "name": "Zia Satazaki",
+              "//url": "https://mywebsite.com/" },
+  "contributors": [ ],
+  "//publisher": "myname",
+  "//license": "tbd",
+  "categories": [ "Scripts" ],
+  "contributes": {
+    "scripts": [
+        { "path": "./export.lua" }
+    ]
+  }
+}
