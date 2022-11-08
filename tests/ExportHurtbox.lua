@@ -21,6 +21,7 @@ local function exportHurtbox()
 	local npath = app.fs.joinPath(dir, base .. "_hurt" .. strip .. "." .. ext)
 	
 	local nspr = Sprite(spr)
+	app.activeSprite = spr -- keep this in background until we need otherwise
 	
 	-- delete all invisible and !nhb layers
 	local del = { }
@@ -55,3 +56,4 @@ local function exportHurtbox()
 end
 
 exportHurtbox()
+--app.command.ExportSpriteSheet();
