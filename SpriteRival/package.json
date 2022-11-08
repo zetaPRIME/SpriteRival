@@ -11,7 +11,7 @@
   "categories": [ "Scripts" ],
   "contributes": {
     "scripts": [
-        { "path": "./export.lua" }
+        { "path": "./plugin.lua" }
     ]
   }
 }
