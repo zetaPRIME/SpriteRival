@@ -106,7 +106,7 @@ function exportSheet(spr, saveAs)
 		app.activeSprite = spr
 		local sst = sp.type
 		if sst == SpriteSheetType.NONE then sst = SpriteSheetType.HORIZONTAL end
-		print(app.command.ExportSpriteSheet(exportSettings(spr, true)))
+		app.command.ExportSpriteSheet(exportSettings(spr, true))
 	end
 	if not validPath(sp.texture_filename) then return false end -- canceled
 	
