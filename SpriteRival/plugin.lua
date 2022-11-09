@@ -136,9 +136,12 @@ function exportSheet(spr, saveAs)
 		end
 	end
 	
-	if needs2x then
-		-- TODO
-	else
+	if needs2x then -- automatically handle upscaling
+		local nspr = Sprite(spr)
+		nspr:resize(nspr.width * 2, nspr.height * 2)
+		app.activeSprite = nspr
+		app.command.ExportSpriteSheet(exportSettings(nspr, false))
+	else -- the quick'n'simple
 		app.activeSprite = spr
 		app.command.ExportSpriteSheet(exportSettings(spr, false))
 	end
@@ -162,7 +165,7 @@ function exportHurtbox(spr)
 	-- delete all invisible and !nhb layers
 	local del = { }
 	for i, l in ipairs(nspr.layers) do
-		if string.find(l.name, "!nhb") then l.isVisible = false end
+		if string.find(l.name, "!nhb") then l.isVisible = false end -- TODO detect wordmash?
 		if not l.isVisible then table.insert(del, l) end
 	end
 	for _, l in pairs(del) do nspr:deleteLayer(l) end
