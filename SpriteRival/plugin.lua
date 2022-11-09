@@ -30,6 +30,17 @@ function validPath(p)
 	return true
 end
 
+function delFile(p)
+	p = app.fs.normalizePath(p)
+	if not app.fs.isFile(p) then return end
+	if app.fs.pathSeparator == "/" then -- unix syntax
+		os.execute('rm -f "' .. p:gsub("\\", "\\\\"):gsub('"', '\\"') .. '"')
+	else -- we windows now
+		-- TODO verify this
+		os.execute('del /q "' .. p:gsub('"', '\\"') .. '"')
+	end
+end
+
 function splitStripPath(p)
 	p = app.fs.fileTitle(p)
 	local base, num
@@ -119,7 +130,9 @@ function exportSheet(spr, saveAs)
 		if numFrames ~= nf then -- correct the number automatically
 			local oldPath = sp.texture_filename -- keep this to remove later
 			sp.texture_filename = setStripPath(sp.texture_filename, numFrames) -- set new filename accordingly
-			-- TODO deduplicate
+			-- and now we remove the old strips
+			delFile(oldPath)
+			if needsHurtbox then delFile(hbPath) end
 		end
 	end
 	
@@ -177,6 +190,8 @@ end
 
 function init(plugin)
 	-- plugin.preferences serialized table
+	
+	--os.execute("echo SpriteRival needs script execution in order to remove strips with incorrect frame count. Checking \"full trust\" will make this a lot less annoying.")
 	
 	local function hasSpr() return not not app.activeSprite end
 	
