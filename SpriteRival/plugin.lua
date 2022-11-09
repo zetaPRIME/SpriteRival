@@ -14,11 +14,127 @@ function warn(txt, title)
 	return false
 end
 
+function dlgExport(path)
+	local c = false
+	local dlg
+	dlg = Dialog { title = "Export..." } : file { id = "file", save = true, focus = true, filename = path, onclick = function()
+		c = true
+		dlg:close()
+	end }
+	local d = dlg:show().data
+	return c and d.file
+end
+
 function validPath(p)
 	if not p or p == "" or p == "**filename**" then return false end
 	return true
 end
 
+function splitStripPath(p)
+	p = app.fs.fileTitle(p)
+	local base, num
+	for t, t2 in string.gmatch(p, "(.+)_strip(%d+)$") do base, num = t, (t2 or "") break end
+	if not base then base, num = p, nil end
+	return base, tonumber(num)
+end
+function setStripPath(p, num)
+	local dir = app.fs.filePath(p)
+	local ext = app.fs.fileExtension(p) -- this will almost always be png, but we keep it intact just in case
+	p = splitStripPath(p) -- baseify
+	local strip = ""
+	if num then strip = "_strip" .. num end
+	return app.fs.joinPath(dir, p .. strip .. "." .. ext)
+end
+
+function hurtboxPath(p)
+	local dir = app.fs.filePath(p)
+	local ext = app.fs.fileExtension(p)
+	local base, num = splitStripPath(p)
+	return app.fs.joinPath(dir, base .. "_hurt_strip" .. num .. "." .. ext)
+end
+
+function exportSettings(spr, ui)
+	local sp = app.preferences.document(spr).sprite_sheet
+	local new = not sp.defined or not validPath(sp.texture_filename)
+	return {
+		ui = ui,
+		-- metrics
+		type = sp.type,
+		columns = sp.columns, rows = sp.rows,
+		width = sp.width, height = sp.height,
+		borderPadding = sp.border_padding,
+		shapePadding = sp.shape_padding,
+		innerPadding = sp.inner_padding,
+		-- modifiers
+		trimSprite = sp.trim_sprite,
+		trim = sp.trim,
+		trimByGrid = sp.trim_by_grid,
+		extrude = sp.extrude,
+		mergeDuplicates = sp.merge_duplicates,
+		ignoreEmpty = sp.ignore_empty,
+		-- selectors
+		layer = sp.layer,
+		tag = sp.frame_tag,
+		-- file
+		textureFilename = sp.texture_filename,
+		dataFilename = sp.data_filename, dataFormat = sp.data_format,
+		-- UI
+		openGenerated = ui and sp.open_generated,
+		-- not implemented: split_*, list_*
+	}
+end
+
+function exportSheet(spr, saveAs)
+	spr = spr or app.activeSprite
+	if not spr then return false end
+	local pp = app.preferences.document(spr)
+	local sp = pp.sprite_sheet
+	local nxp = not validPath(sp.texture_filename)
+	if nxp or saveAs then
+		-- prompt for export properties
+		app.activeSprite = spr
+		local sst = sp.type
+		if sst == SpriteSheetType.NONE then sst = SpriteSheetType.HORIZONTAL end
+		print(app.command.ExportSpriteSheet(exportSettings(spr, true)))
+	end
+	if not validPath(sp.texture_filename) then return false end -- canceled
+	--print "not canceled"
+	-- TODO: don't try to do Rivals things if sheet type isn't horizontal
+	
+	local needs2x = false -- TODO
+	local needsHurtbox = false -- we detect this later
+	
+	local base, nf = splitStripPath(sp.texture_filename)
+	
+	--for t, t2 in string.gmatch(app.fs.fileTitle(sp.texture_filename), "(.+)(_strip%d+)") do base, strip = t, (t2 or "") break end
+	--print(base) print(nf) print "uwu"
+	
+	if nf then -- strip export
+		local hbPath = hurtboxPath(sp.texture_filename)
+		print(hbPath)
+		needsHurtbox = app.fs.isFile(hbPath)
+		print(needsHurtbox and "hurtbox present" or "no hurtbox")
+		
+		local numFrames = #spr.frames
+		if sp.frame_tag ~= "" then -- count tag frames instead of sprite ones
+			local tag
+			for k,t in pairs(sprite.tags) do if t.name == sp.frame_tag then tag = t break end end
+			if tag then numFrames = tag.frames end
+		end
+		if numFrames ~= nf then -- correct the number automatically
+			local oldPath = sp.texture_filename -- keep this to remove later
+			sp.texture_filename = setStripPath(sp.texture_filename, numFrames) -- set new file
+			-- TODO deduplicate
+		end
+	end
+	print(sp.texture_filename)
+	
+	--local numFrames = 
+	-- frame_tag is "" if not tag-limited
+	--print(sp.frame_tag or "no tag")
+end
+
+-- TODO modernize
 function exportHurtbox(spr)
 	spr = spr or app.activeSprite
 	if not spr then return false end
@@ -73,32 +189,29 @@ end
 
 
 function init(plugin)
-	--print("this works")
-
 	-- plugin.preferences serialized table
 	
 	local function hasSpr() return not not app.activeSprite end
-
 	
 	plugin:newCommand {
 		id = "export",
-		title = "Export (SR)",
+		title = "SpriteRival Export",
 		group = "file_export",
-		onclick = function() end,
+		onclick = function() exportSheet() end,
 		onenabled = hasSpr,
 	}
 	
 	plugin:newCommand {
 		id = "exportAs",
-		title = "Export As... (SR)",
+		title = "SR Export As...",
 		group = "file_export",
-		onclick = function() end,
+		onclick = function() exportSheet(nil, true) end,
 		onenabled = hasSpr,
 	}
 	
 	plugin:newCommand {
 		id = "exportHurtbox",
-		title = "Export Hurtbox (SR)",
+		title = "SR Export Hurtbox",
 		group = "file_export",
 		onclick = function() exportHurtbox() end,
 		onenabled = hasSpr,
