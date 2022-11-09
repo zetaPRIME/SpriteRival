@@ -57,7 +57,9 @@ function exportSettings(spr, ui)
 	local sp = app.preferences.document(spr).sprite_sheet
 	local new = not sp.defined or not validPath(sp.texture_filename)
 	return {
-		ui = ui,
+		-- UI
+		ui = ui, askOverwrite = ui,
+		openGenerated = ui and sp.open_generated,
 		-- metrics
 		type = sp.type,
 		columns = sp.columns, rows = sp.rows,
@@ -78,8 +80,6 @@ function exportSettings(spr, ui)
 		-- file
 		textureFilename = sp.texture_filename,
 		dataFilename = sp.data_filename, dataFormat = sp.data_format,
-		-- UI
-		openGenerated = ui and sp.open_generated,
 		-- not implemented: split_*, list_*
 	}
 end
@@ -98,7 +98,7 @@ function exportSheet(spr, saveAs)
 		print(app.command.ExportSpriteSheet(exportSettings(spr, true)))
 	end
 	if not validPath(sp.texture_filename) then return false end -- canceled
-	--print "not canceled"
+	
 	-- TODO: don't try to do Rivals things if sheet type isn't horizontal
 	
 	local needs2x = false -- TODO
@@ -106,14 +106,9 @@ function exportSheet(spr, saveAs)
 	
 	local base, nf = splitStripPath(sp.texture_filename)
 	
-	--for t, t2 in string.gmatch(app.fs.fileTitle(sp.texture_filename), "(.+)(_strip%d+)") do base, strip = t, (t2 or "") break end
-	--print(base) print(nf) print "uwu"
-	
 	if nf then -- strip export
 		local hbPath = hurtboxPath(sp.texture_filename)
-		print(hbPath)
 		needsHurtbox = app.fs.isFile(hbPath)
-		print(needsHurtbox and "hurtbox present" or "no hurtbox")
 		
 		local numFrames = #spr.frames
 		if sp.frame_tag ~= "" then -- count tag frames instead of sprite ones
@@ -123,18 +118,22 @@ function exportSheet(spr, saveAs)
 		end
 		if numFrames ~= nf then -- correct the number automatically
 			local oldPath = sp.texture_filename -- keep this to remove later
-			sp.texture_filename = setStripPath(sp.texture_filename, numFrames) -- set new file
+			sp.texture_filename = setStripPath(sp.texture_filename, numFrames) -- set new filename accordingly
 			-- TODO deduplicate
 		end
 	end
-	print(sp.texture_filename)
 	
-	--local numFrames = 
-	-- frame_tag is "" if not tag-limited
-	--print(sp.frame_tag or "no tag")
+	if needs2x then
+		-- TODO
+	else
+		app.activeSprite = spr
+		app.command.ExportSpriteSheet(exportSettings(spr, false))
+	end
+	if needsHurtbox then exportHurtbox(spr) end
+	
+	app.activeSprite = spr -- make sure we come back to this at the end
 end
 
--- TODO modernize
 function exportHurtbox(spr)
 	spr = spr or app.activeSprite
 	if not spr then return false end
@@ -142,14 +141,7 @@ function exportHurtbox(spr)
 	local xpath = pp.sprite_sheet.texture_filename
 	if not validPath(xpath) then return err "Sprite has not been exported." end -- abort if not init
 	
-	local ext = app.fs.fileExtension(xpath)
-	local dir = app.fs.filePath(xpath)
-	local fn = app.fs.fileTitle(xpath)
-	
-	local base, strip
-	for t, t2 in string.gmatch(fn, "(.+)(_strip%d+)") do base, strip = t, (t2 or "") break end
-	
-	local npath = app.fs.joinPath(dir, base .. "_hurt" .. strip .. "." .. ext)
+	local npath = hurtboxPath(xpath)
 	
 	-- copy to a new sprite
 	local nspr = Sprite(spr)
@@ -173,13 +165,8 @@ function exportHurtbox(spr)
 	end
 	
 	app.activeSprite = nspr
-	app.command.ExportSpriteSheet {
-		ui = false,
-		askOverwrite = false,
-		type = SpriteSheetType.HORIZONTAL,
-		textureFilename = npath,
-		dataFilename = "",
-	}
+	app.preferences.document(nspr).sprite_sheet.texture_filename = npath
+	app.command.ExportSpriteSheet(exportSettings(nspr, false))
 	
 	app.activeSprite = spr
 	nspr:close()
