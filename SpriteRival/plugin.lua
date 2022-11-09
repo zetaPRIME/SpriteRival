@@ -208,7 +208,7 @@ function init(plugin)
 	
 	plugin:newCommand {
 		id = "exportAs",
-		title = "SR Export As...",
+		title = "SR: Export As...",
 		group = "file_export",
 		onclick = function() exportSheet(nil, true) end,
 		onenabled = hasSpr,
@@ -216,7 +216,7 @@ function init(plugin)
 	
 	plugin:newCommand {
 		id = "exportHurtbox",
-		title = "SR Export Hurtbox",
+		title = "SR: Generate Hurtbox",
 		group = "file_export",
 		onclick = function() exportHurtbox() end,
 		onenabled = hasSpr,
