@@ -142,7 +142,7 @@ function exportSheet(spr, saveAs)
 		local nspr = Sprite(spr)
 		nspr:resize(nspr.width * st.exportScale, nspr.height * st.exportScale)
 		app.activeSprite = nspr
-		app.command.ExportSpriteSheet(exportSettings(nspr, false))
+		app.command.ExportSpriteSheet(exportSettings(spr, false))
 	else -- the quick'n'simple
 		app.activeSprite = spr
 		app.command.ExportSpriteSheet(exportSettings(spr, false))
@@ -231,10 +231,7 @@ function init(plugin)
 		id = "spriteSettings",
 		title = "SpriteRival Properties...",
 		group = "sprite_properties",
-		onclick = function()
-			local spr = app.activeSprite
-			settings.store(spr, settings.get(spr))
-		end,
+		onclick = function() settings.showDialog() end,
 		onenabled = hasSpr,
 	}
 end
