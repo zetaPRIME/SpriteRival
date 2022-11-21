@@ -19,14 +19,23 @@ end
 local function gslc(spr) -- get storage layer candidate
 	local sl = gsl(spr)
 	if sl then return sl end
-	local function nd(l) return not l.data or l.data == "" end
+	
+	sl = spr:newGroup()
+	sl.name = "(SpriteRival data)"
+	sl.stackIndex = 0
+	sl.isVisible = false
+	sl.isEditable = false
+	sl.isExpanded = false
+	
+	return sl
+	--[[local function nd(l) return not l.data or l.data == "" end
 	-- try reference layer
 	for i, l in ipairs(spr.layers) do
 		if nd(l) and l.isReference then return l end
 	end
 	-- then just do whatever layer has no other data
 	for i, l in ipairs(spr.layers) do if nd(l) then return l end end
-	-- can return nil
+	-- can return nil ]]
 end
 
 function settings.get(spr)
@@ -40,17 +49,20 @@ function settings.get(spr)
 end
 
 function settings.store(spr, s)
-	local sl = gslc(spr)
-	if not sl then return false end -- storage failed; no candidate
-	sl.data = tag .. json.encode(s)
-	
-	-- clean up duplicate entries
-	for i, l in ipairs(spr.layers) do
-		if l ~= sl then
-			if l.data and string.find(l.data, tag) == 1 then l.data = "" end
+	local sl
+	app.transaction(function() -- bundle into a single undo action
+		sl = gslc(spr)
+		if not sl then return end -- storage failed; no candidate
+		sl.data = tag .. json.encode(s)
+		
+		-- clean up duplicate entries
+		for i, l in ipairs(spr.layers) do
+			if l ~= sl then
+				if l.data and string.find(l.data, tag) == 1 then l.data = "" end
+			end
 		end
-	end
-	return true
+	end)
+	return not not sl
 end
 
 function settings.showDialog(spr)
