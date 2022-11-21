@@ -1,4 +1,6 @@
-json = dofile "json.lua"
+local imports = { }
+function import(str) if not imports[str] then _ENV[str] = dofile(str .. ".lua") imports[str] = true end end
+import "settings"
 
 for k,v in pairs(_ENV) do
 	--print(k)
@@ -112,7 +114,7 @@ function exportSheet(spr, saveAs)
 	
 	-- TODO: don't try to do Rivals things if sheet type isn't horizontal
 	
-	local needs2x = false -- TODO
+	local st = settings.get(spr)
 	local needsHurtbox = false -- we detect this later
 	
 	local base, nf = splitStripPath(sp.texture_filename)
@@ -136,9 +138,9 @@ function exportSheet(spr, saveAs)
 		end
 	end
 	
-	if needs2x then -- automatically handle upscaling
+	if st.exportScale > 1 then -- automatically handle upscaling
 		local nspr = Sprite(spr)
-		nspr:resize(nspr.width * 2, nspr.height * 2)
+		nspr:resize(nspr.width * st.exportScale, nspr.height * st.exportScale)
 		app.activeSprite = nspr
 		app.command.ExportSpriteSheet(exportSettings(nspr, false))
 	else -- the quick'n'simple
@@ -157,6 +159,9 @@ function exportHurtbox(spr)
 	local xpath = pp.sprite_sheet.texture_filename
 	if not validPath(xpath) then return err "Sprite has not been exported." end -- abort if not init
 	
+	local st = settings.get(spr)
+	local sc = st.exportScale * (st.hurt2x and 2 or 1)
+	
 	local npath = hurtboxPath(xpath)
 	
 	-- copy to a new sprite
@@ -172,7 +177,7 @@ function exportHurtbox(spr)
 	
 	-- merge and scale
 	nspr:flatten()
-	nspr:resize(nspr.width * 2, nspr.height * 2)
+	if sc > 1 then nspr:resize(nspr.width * sc, nspr.height * sc) end
 	
 	for i, c in ipairs(nspr.cels) do -- mask everything out green
 		for px in c.image:pixels() do
@@ -219,6 +224,17 @@ function init(plugin)
 		title = "SR: Generate Hurtbox",
 		group = "file_export",
 		onclick = function() exportHurtbox() end,
+		onenabled = hasSpr,
+	}
+	
+	plugin:newCommand {
+		id = "spriteSettings",
+		title = "SpriteRival Properties...",
+		group = "sprite_properties",
+		onclick = function()
+			local spr = app.activeSprite
+			settings.store(spr, settings.get(spr))
+		end,
 		onenabled = hasSpr,
 	}
 end
