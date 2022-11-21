@@ -126,7 +126,7 @@ function exportSheet(spr, saveAs)
 		local numFrames = #spr.frames
 		if sp.frame_tag ~= "" then -- count tag frames instead of sprite ones
 			local tag
-			for k,t in pairs(sprite.tags) do if t.name == sp.frame_tag then tag = t break end end
+			for k,t in pairs(spr.tags) do if t.name == sp.frame_tag then tag = t break end end
 			if tag then numFrames = tag.frames end
 		end
 		if numFrames ~= nf then -- correct the number automatically
