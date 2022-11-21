@@ -143,6 +143,7 @@ function exportSheet(spr, saveAs)
 		nspr:resize(nspr.width * st.exportScale, nspr.height * st.exportScale)
 		app.activeSprite = nspr
 		app.command.ExportSpriteSheet(exportSettings(spr, false))
+		nspr:close()
 	else -- the quick'n'simple
 		app.activeSprite = spr
 		app.command.ExportSpriteSheet(exportSettings(spr, false))
